@@ -1,6 +1,6 @@
 /* =========================================
-   vasu_ChatBot
-   Main Frontend JavaScript
+   32J3_ChatBot
+   AI Student Assistant
    ========================================= */
 
 
@@ -11,7 +11,7 @@
 let conversation = [];
 
 let chats = JSON.parse(
-    localStorage.getItem("32J3_Chatbot") || "[]"
+    localStorage.getItem("32J3Chats") || "[]"
 );
 
 let currentChatId = null;
@@ -88,8 +88,11 @@ function createNewChat(saveOldChat = true) {
 async function sendMessage() {
 
     if (isGenerating) {
+
         return;
+
     }
+
 
     const input =
         document.getElementById("userInput");
@@ -100,12 +103,15 @@ async function sendMessage() {
     const message =
         input.value.trim();
 
+
     if (message === "") {
+
         return;
+
     }
 
 
-    /* Hide welcome screen */
+    /* Hide welcome */
 
     const welcome =
         document.getElementById("welcomeScreen");
@@ -117,7 +123,7 @@ async function sendMessage() {
     }
 
 
-    /* Add user message */
+    /* User message */
 
     addMessage(
         "user",
@@ -125,7 +131,7 @@ async function sendMessage() {
     );
 
 
-    /* Save conversation */
+    /* Memory */
 
     conversation.push({
 
@@ -141,14 +147,16 @@ async function sendMessage() {
     autoResize(input);
 
 
-    /* Show typing animation */
+    /* Typing */
 
     const typingMessage =
         createTypingMessage();
 
+
     messagesBox.appendChild(
         typingMessage
     );
+
 
     messagesBox.scrollTop =
         messagesBox.scrollHeight;
@@ -197,12 +205,10 @@ async function sendMessage() {
         }
 
 
-        /* Remove typing */
-
         typingMessage.remove();
 
 
-        /* Add AI answer */
+        /* AI response */
 
         addMessage(
             "bot",
@@ -210,7 +216,7 @@ async function sendMessage() {
         );
 
 
-        /* Save AI response */
+        /* Memory */
 
         conversation.push({
 
@@ -220,8 +226,6 @@ async function sendMessage() {
 
         });
 
-
-        /* Save chat */
 
         saveCurrentChat();
 
@@ -276,15 +280,15 @@ function addMessage(
     const message =
         document.createElement("div");
 
+
     message.className =
         type === "user"
             ? "user-message"
             : "bot-message";
 
 
-    /* Safe text */
-
-    message.textContent = text;
+    message.textContent =
+        text;
 
 
     container.appendChild(
@@ -292,24 +296,28 @@ function addMessage(
     );
 
 
-    /* Copy button for AI */
+    /* COPY BUTTON */
 
     if (type === "bot") {
 
         const copyButton =
             document.createElement("button");
 
+
         copyButton.className =
             "copy-button";
 
+
         copyButton.textContent =
             "📋 Copy";
+
 
         copyButton.onclick =
             () => copyText(
                 text,
                 copyButton
             );
+
 
         container.appendChild(
             copyButton
@@ -338,6 +346,7 @@ function createTypingMessage() {
     const container =
         document.createElement("div");
 
+
     container.className =
         "message-container";
 
@@ -345,12 +354,14 @@ function createTypingMessage() {
     const message =
         document.createElement("div");
 
+
     message.className =
         "bot-message";
 
 
     const typing =
         document.createElement("div");
+
 
     typing.className =
         "typing";
@@ -367,6 +378,7 @@ function createTypingMessage() {
         typing
     );
 
+
     container.appendChild(
         message
     );
@@ -378,7 +390,7 @@ function createTypingMessage() {
 
 
 /* =========================================
-   COPY ANSWER
+   COPY
    ========================================= */
 
 async function copyText(
@@ -391,6 +403,7 @@ async function copyText(
         await navigator.clipboard.writeText(
             text
         );
+
 
         button.textContent =
             "✅ Copied!";
@@ -415,7 +428,7 @@ async function copyText(
 
 
 /* =========================================
-   ENTER KEY
+   ENTER
    ========================================= */
 
 function handleKey(event) {
@@ -435,13 +448,14 @@ function handleKey(event) {
 
 
 /* =========================================
-   AUTO RESIZE TEXTAREA
+   AUTO RESIZE
    ========================================= */
 
 function autoResize(textarea) {
 
     textarea.style.height =
         "auto";
+
 
     textarea.style.height =
         Math.min(
@@ -463,8 +477,11 @@ function updateSendButton() {
             "sendButton"
         );
 
+
     if (!button) {
+
         return;
+
     }
 
 
@@ -500,8 +517,10 @@ function useSuggestion(text) {
             "userInput"
         );
 
+
     input.value =
         text;
+
 
     autoResize(input);
 
@@ -550,11 +569,14 @@ function saveCurrentChat() {
 
     const chatData = {
 
-        id: currentChatId,
+        id:
+            currentChatId,
 
-        title: title,
+        title:
+            title,
 
-        messages: conversation,
+        messages:
+            conversation,
 
         updated:
             new Date().toISOString()
@@ -578,14 +600,12 @@ function saveCurrentChat() {
     }
 
 
-    /* Keep last 30 chats */
-
     chats =
         chats.slice(0, 30);
 
 
     localStorage.setItem(
-        "vasuChats",
+        "32J3Chats",
         JSON.stringify(chats)
     );
 
@@ -593,7 +613,7 @@ function saveCurrentChat() {
 
 
 /* =========================================
-   RENDER HISTORY
+   HISTORY
    ========================================= */
 
 function renderChatHistory() {
@@ -603,8 +623,11 @@ function renderChatHistory() {
             "chatHistory"
         );
 
+
     if (!history) {
+
         return;
+
     }
 
 
@@ -617,6 +640,7 @@ function renderChatHistory() {
             document.createElement(
                 "div"
             );
+
 
         item.className =
             "history-item";
@@ -655,7 +679,9 @@ function loadChat(id) {
 
 
     if (!chat) {
+
         return;
+
     }
 
 
@@ -672,6 +698,7 @@ function loadChat(id) {
             "welcomeScreen"
         );
 
+
     if (welcome) {
 
         welcome.style.display =
@@ -684,6 +711,7 @@ function loadChat(id) {
         document.getElementById(
             "messages"
         );
+
 
     messages.innerHTML = "";
 
@@ -711,26 +739,29 @@ function loadChat(id) {
 
 
 /* =========================================
-   CLEAR ALL CHATS
+   CLEAR HISTORY
    ========================================= */
 
 function clearAllChats() {
 
     const confirmed =
         confirm(
-            "Delete all chat history?"
+            "Delete all 32J3_ChatBot chat history?"
         );
 
 
     if (!confirmed) {
+
         return;
+
     }
 
 
     chats = [];
 
+
     localStorage.removeItem(
-        "vasuChats"
+        "32J3Chats"
     );
 
 
@@ -742,7 +773,7 @@ function clearAllChats() {
 
 
 /* =========================================
-   SEARCH CHATS
+   SEARCH
    ========================================= */
 
 const searchInput =
@@ -790,7 +821,7 @@ if (searchInput) {
 
 
 /* =========================================
-   DARK / LIGHT MODE
+   DARK MODE
    ========================================= */
 
 function toggleTheme() {
@@ -807,7 +838,7 @@ function toggleTheme() {
 
 
     localStorage.setItem(
-        "vasuTheme",
+        "32J3Theme",
         isDark
             ? "dark"
             : "light"
@@ -827,7 +858,7 @@ function loadTheme() {
 
     const theme =
         localStorage.getItem(
-            "vasuTheme"
+            "32J3Theme"
         );
 
 
@@ -846,7 +877,7 @@ function loadTheme() {
 
 
 /* =========================================
-   THEME ICON
+   THEME ICONS
    ========================================= */
 
 function updateThemeIcons() {
@@ -902,6 +933,7 @@ function toggleSidebar() {
             "sidebar"
         );
 
+
     const overlay =
         document.getElementById(
             "overlay"
@@ -911,6 +943,7 @@ function toggleSidebar() {
     sidebar.classList.toggle(
         "open"
     );
+
 
     overlay.classList.toggle(
         "active"
@@ -926,6 +959,7 @@ function closeSidebarMobile() {
             "sidebar"
         );
 
+
     const overlay =
         document.getElementById(
             "overlay"
@@ -933,13 +967,16 @@ function closeSidebarMobile() {
 
 
     if (!sidebar) {
+
         return;
+
     }
 
 
     sidebar.classList.remove(
         "open"
     );
+
 
     overlay.classList.remove(
         "active"
