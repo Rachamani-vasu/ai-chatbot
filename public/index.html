@@ -22,7 +22,7 @@
 
     <div class="app">
 
-        <!-- SIDEBAR -->
+        <!-- ================= SIDEBAR ================= -->
 
         <aside class="sidebar" id="sidebar">
 
@@ -36,33 +36,43 @@
 
                     <div>
                         <h2>32J3_ChatBot</h2>
-                        <span>AI Student Assistant</span>
+
+                        <span>
+                            AI Student Assistant
+                        </span>
                     </div>
 
                 </div>
 
+
                 <button
                     class="close-sidebar"
-                    onclick="toggleSidebar()">
+                    onclick="toggleSidebar()"
+                    title="Close sidebar">
+
                     ×
+
                 </button>
 
             </div>
 
 
-            <!-- NEW CHAT -->
+            <!-- ================= NEW CHAT ================= -->
 
             <button
                 class="new-chat"
                 onclick="newChat()">
 
                 <span>＋</span>
-                <span>New Chat</span>
+
+                <span>
+                    New Chat
+                </span>
 
             </button>
 
 
-            <!-- SEARCH -->
+            <!-- ================= SEARCH ================= -->
 
             <div class="search-box">
 
@@ -76,7 +86,7 @@
             </div>
 
 
-            <!-- CHAT HISTORY -->
+            <!-- ================= CHAT HISTORY ================= -->
 
             <div class="chat-history">
 
@@ -84,12 +94,14 @@
                     TODAY
                 </div>
 
-                <div id="chatHistory"></div>
+                <div id="chatHistory">
+
+                </div>
 
             </div>
 
 
-            <!-- SIDEBAR BUTTONS -->
+            <!-- ================= SIDEBAR BOTTOM ================= -->
 
             <div class="sidebar-bottom">
 
@@ -125,18 +137,19 @@
         </aside>
 
 
-        <!-- MAIN -->
+        <!-- ================= MAIN AREA ================= -->
 
         <main class="main">
 
 
-            <!-- TOP BAR -->
+            <!-- ================= TOP BAR ================= -->
 
             <header class="topbar">
 
                 <button
                     class="menu-button"
-                    onclick="toggleSidebar()">
+                    onclick="toggleSidebar()"
+                    title="Open menu">
 
                     ☰
 
@@ -145,7 +158,9 @@
 
                 <div class="topbar-title">
 
-                    <div class="status-dot"></div>
+                    <div class="status-dot">
+                    </div>
+
 
                     <div>
 
@@ -187,125 +202,44 @@
             </header>
 
 
-            <!-- CHAT AREA -->
+            <!-- ================= CHAT AREA ================= -->
 
             <section
                 class="chat-area"
                 id="chatArea">
 
 
-                <!-- WELCOME -->
+                <!-- ================= WELCOME ================= -->
 
                 <div
                     class="welcome"
                     id="welcomeScreen">
 
                     <div class="welcome-logo">
+
                         ✨
+
                     </div>
+
 
                     <h1>
                         How can I help you today?
                     </h1>
 
+
                     <p>
+
                         Welcome to 32J3_ChatBot.
-                        Ask questions about programming,
-                        academics, exams, projects and more.
+                        Ask me anything about your studies,
+                        programming, projects, technology,
+                        or any general topic.
+
                     </p>
-
-
-                    <!-- SUGGESTIONS -->
-
-                    <div class="suggestions">
-
-
-                        <button
-                            onclick="useSuggestion('Explain Python in simple words')">
-
-                            <span>🐍</span>
-
-                            <div>
-
-                                <strong>
-                                    Learn Python
-                                </strong>
-
-                                <small>
-                                    Explain Python in simple words
-                                </small>
-
-                            </div>
-
-                        </button>
-
-
-                        <button
-                            onclick="useSuggestion('Explain machine learning with a simple example')">
-
-                            <span>🧠</span>
-
-                            <div>
-
-                                <strong>
-                                    Machine Learning
-                                </strong>
-
-                                <small>
-                                    Explain ML with an example
-                                </small>
-
-                            </div>
-
-                        </button>
-
-
-                        <button
-                            onclick="useSuggestion('Give me important exam questions for Software Engineering')">
-
-                            <span>📚</span>
-
-                            <div>
-
-                                <strong>
-                                    Exam Preparation
-                                </strong>
-
-                                <small>
-                                    Get important exam questions
-                                </small>
-
-                            </div>
-
-                        </button>
-
-
-                        <button
-                            onclick="useSuggestion('Help me create a web development project')">
-
-                            <span>💻</span>
-
-                            <div>
-
-                                <strong>
-                                    Project Help
-                                </strong>
-
-                                <small>
-                                    Get help with your project
-                                </small>
-
-                            </div>
-
-                        </button>
-
-
-                    </div>
 
                 </div>
 
 
-                <!-- MESSAGES -->
+                <!-- ================= MESSAGES ================= -->
 
                 <div
                     id="messages"
@@ -316,14 +250,14 @@
             </section>
 
 
-            <!-- INPUT -->
+            <!-- ================= INPUT AREA ================= -->
 
             <div class="input-section">
 
                 <div class="input-wrapper">
 
 
-                    <!-- VOICE -->
+                    <!-- VOICE BUTTON -->
 
                     <button
                         class="input-action"
@@ -336,17 +270,18 @@
                     </button>
 
 
-                    <!-- TEXT -->
+                    <!-- MESSAGE INPUT -->
 
                     <textarea
                         id="userInput"
                         rows="1"
                         placeholder="Message 32J3_ChatBot..."
                         onkeydown="handleKey(event)"
-                        oninput="autoResize(this)"></textarea>
+                        oninput="autoResize(this)">
+                    </textarea>
 
 
-                    <!-- SEND -->
+                    <!-- SEND BUTTON -->
 
                     <button
                         class="send-button"
@@ -361,15 +296,22 @@
                 </div>
 
 
+                <!-- INPUT INFORMATION -->
+
                 <div class="input-info">
 
                     <span>
+
                         32J3_ChatBot can make mistakes.
                         Check important information.
+
                     </span>
 
+
                     <span>
+
                         Press Enter to send
+
                     </span>
 
                 </div>
@@ -381,14 +323,17 @@
     </div>
 
 
-    <!-- MOBILE OVERLAY -->
+    <!-- ================= MOBILE OVERLAY ================= -->
 
     <div
         class="overlay"
         id="overlay"
         onclick="toggleSidebar()">
+
     </div>
 
+
+    <!-- ================= JAVASCRIPT ================= -->
 
     <script src="script.js"></script>
 
