@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Student Assistant</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="chat-container">
+
+        <div class="chat-header">
+            🤖 AI Student Assistant
+        </div>
+
+        <div id="messages">
+
+            <div class="bot-message">
+                Hello! 👋 Ask me anything.
+            </div>
+
+        </div>
+
+        <div class="input-area">
+
+            <input
+                id="userInput"
+                type="text"
+                placeholder="Ask anything..."
+                onkeydown="handleKey(event)"
+            >
+
+            <button onclick="sendMessage()">
+                Send
+            </button>
+
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
