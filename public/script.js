@@ -11,7 +11,7 @@
 let conversation = [];
 
 let chats = JSON.parse(
-    localStorage.getItem("vasuChats") || "[]"
+    localStorage.getItem("32J3_Chatbot") || "[]"
 );
 
 let currentChatId = null;
