@@ -8,9 +8,7 @@ app.use(express.json());
 app.use(express.static("public"));
 
 app.post("/chat", async (req, res) => {
-
     try {
-
         const userMessage = req.body.message;
 
         const response = await fetch(
@@ -20,7 +18,9 @@ app.post("/chat", async (req, res) => {
 
                 headers: {
                     "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://ai-student-assistant.onrender.com",
+                    "X-Title": "AI Student Assistant"
                 },
 
                 body: JSON.stringify({
@@ -38,11 +38,13 @@ app.post("/chat", async (req, res) => {
 
         const data = await response.json();
 
-        if (!response.ok) {
-            console.error(data);
+        console.log("OpenRouter response:", data);
 
+        if (!response.ok) {
             return res.status(response.status).json({
-                answer: "AI service error. Please try again."
+                answer: "AI error: " + (
+                    data.error?.message || "Unknown error"
+                )
             });
         }
 
@@ -56,10 +58,10 @@ app.post("/chat", async (req, res) => {
 
     } catch (error) {
 
-        console.error(error);
+        console.error("Server error:", error);
 
         res.status(500).json({
-            answer: "Sorry, something went wrong."
+            answer: "Server error. Please try again."
         });
     }
 });
