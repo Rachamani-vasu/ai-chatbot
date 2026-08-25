@@ -1,1079 +1,304 @@
-/* =========================================
-   32J3_ChatBot
-   AI Student Assistant
-   ========================================= */
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static("public"));
 
 
 /* =========================================
-   VARIABLES
+   CHAT API
    ========================================= */
 
-let conversation = [];
-
-let chats = JSON.parse(
-    localStorage.getItem("32J3Chats") || "[]"
-);
-
-let currentChatId = null;
-
-let isGenerating = false;
-
-
-/* =========================================
-   PAGE LOAD
-   ========================================= */
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    loadTheme();
-
-    renderChatHistory();
-
-    createNewChat(false);
-
-});
-
-
-/* =========================================
-   NEW CHAT
-   ========================================= */
-
-function newChat() {
-
-    createNewChat(true);
-
-}
-
-
-function createNewChat(saveOldChat = true) {
-
-    if (
-        saveOldChat &&
-        conversation.length > 0
-    ) {
-
-        saveCurrentChat();
-
-    }
-
-    conversation = [];
-
-    currentChatId = Date.now();
-
-    const messages =
-        document.getElementById("messages");
-
-    const welcome =
-        document.getElementById("welcomeScreen");
-
-    messages.innerHTML = "";
-
-    if (welcome) {
-
-        welcome.style.display = "block";
-
-    }
-
-    renderChatHistory();
-
-    closeSidebarMobile();
-
-}
-
-
-/* =========================================
-   SEND MESSAGE
-   ========================================= */
-
-async function sendMessage() {
-
-    if (isGenerating) {
-
-        return;
-
-    }
-
-
-    const input =
-        document.getElementById("userInput");
-
-    const messagesBox =
-        document.getElementById("messages");
-
-    const message =
-        input.value.trim();
-
-
-    if (message === "") {
-
-        return;
-
-    }
-
-
-    /* Hide welcome */
-
-    const welcome =
-        document.getElementById("welcomeScreen");
-
-    if (welcome) {
-
-        welcome.style.display = "none";
-
-    }
-
-
-    /* User message */
-
-    addMessage(
-        "user",
-        message
-    );
-
-
-    /* Memory */
-
-    conversation.push({
-
-        role: "user",
-
-        content: message
-
-    });
-
-
-    input.value = "";
-
-    autoResize(input);
-
-
-    /* Typing */
-
-    const typingMessage =
-        createTypingMessage();
-
-
-    messagesBox.appendChild(
-        typingMessage
-    );
-
-
-    messagesBox.scrollTop =
-        messagesBox.scrollHeight;
-
-
-    isGenerating = true;
-
-    updateSendButton();
-
+app.post("/chat", async (req, res) => {
 
     try {
 
-        const response =
-            await fetch("/chat", {
+        let messages = req.body.messages;
+
+
+        /* Check messages */
+
+        if (!Array.isArray(messages)) {
+
+            return res.status(400).json({
+                answer: "Invalid message format."
+            });
+
+        }
+
+
+        /* Remove empty messages */
+
+        messages = messages.filter(message => {
+
+            return (
+                message &&
+                typeof message.content === "string" &&
+                message.content.trim().length > 0 &&
+                (
+                    message.role === "user" ||
+                    message.role === "assistant"
+                )
+            );
+
+        });
+
+
+        /* Check for empty conversation */
+
+        if (messages.length === 0) {
+
+            return res.status(400).json({
+                answer: "Please enter a message."
+            });
+
+        }
+
+
+        /* Keep last 20 messages */
+
+        messages = messages.slice(-20);
+
+
+        /* =========================================
+           SYSTEM INSTRUCTION
+           ========================================= */
+
+        const systemMessage = {
+
+            role: "system",
+
+            content: `
+You are 32J3_ChatBot, an AI Student Assistant.
+
+Help students with academic questions, programming,
+computer science, mathematics, projects, assignments,
+exam preparation, technology and general questions.
+
+Give clear, simple and useful answers.
+
+When appropriate:
+- Explain step by step
+- Give simple examples
+- Give exam-friendly answers
+- Provide code when requested
+- Remember previous messages in the conversation
+
+Do not make up information when you are unsure.
+`
+
+        };
+
+
+        /* =========================================
+           OPENROUTER REQUEST
+           ========================================= */
+
+        const response = await fetch(
+
+            "https://openrouter.ai/api/v1/chat/completions",
+
+            {
 
                 method: "POST",
 
                 headers: {
 
+                    "Authorization":
+                        `Bearer ${process.env.OPENROUTER_API_KEY}`,
+
                     "Content-Type":
-                        "application/json"
+                        "application/json",
+
+                    "HTTP-Referer":
+                        "https://ai-chatbot-jnzk.onrender.com",
+
+                    "X-Title":
+                        "32J3_ChatBot"
 
                 },
 
                 body: JSON.stringify({
 
-                    messages:
-                        conversation
+                    model: "openrouter/free",
+
+                    messages: [
+
+                        systemMessage,
+
+                        ...messages
+
+                    ]
 
                 })
 
+            }
+
+        );
+
+
+        /* =========================================
+           SAFELY READ RESPONSE
+           ========================================= */
+
+        const responseText =
+            await response.text();
+
+
+        console.log(
+            "OpenRouter status:",
+            response.status
+        );
+
+
+        console.log(
+            "OpenRouter raw response:",
+            responseText
+        );
+
+
+        /* Empty response */
+
+        if (!responseText ||
+            responseText.trim() === "") {
+
+            return res.status(502).json({
+
+                answer:
+                    "The AI service returned an empty response. Please try again."
+
             });
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.answer ||
-                "AI service error"
-            );
 
         }
 
 
-        typingMessage.remove();
+        /* Safely parse JSON */
+
+        let data;
+
+        try {
+
+            data =
+                JSON.parse(responseText);
+
+        } catch (jsonError) {
+
+            console.error(
+                "OpenRouter JSON parse error:",
+                jsonError
+            );
 
 
-        /* AI response */
+            return res.status(502).json({
 
-        addMessage(
-            "bot",
-            data.answer
+                answer:
+                    "The AI service returned an invalid response. Please try again."
+
+            });
+
+        }
+
+
+        console.log(
+            "OpenRouter response:",
+            data
         );
 
 
-        /* Memory */
+        /* =========================================
+           OPENROUTER ERROR
+           ========================================= */
 
-        conversation.push({
+        if (!response.ok) {
 
-            role: "assistant",
+            return res.status(
+                response.status
+            ).json({
 
-            content: data.answer
+                answer:
+                    data?.error?.message ||
+                    "The AI service returned an error."
+
+            });
+
+        }
+
+
+        /* =========================================
+           GET AI ANSWER
+           ========================================= */
+
+        const answer =
+            data?.choices?.[0]?.message?.content;
+
+
+        if (
+            !answer ||
+            typeof answer !== "string" ||
+            answer.trim() === ""
+        ) {
+
+            return res.status(502).json({
+
+                answer:
+                    "The AI returned an empty answer. Please try again."
+
+            });
+
+        }
+
+
+        /* =========================================
+           SEND ANSWER
+           ========================================= */
+
+        return res.json({
+
+            answer:
+                answer.trim()
 
         });
 
 
-        saveCurrentChat();
-
-        renderChatHistory();
-
-
     } catch (error) {
 
-        console.error(error);
-
-        typingMessage.remove();
-
-
-        addMessage(
-
-            "bot",
-
-            "❌ Sorry, I couldn't connect to the AI. Please try again."
-
+        console.error(
+            "Server error:",
+            error
         );
+
+
+        return res.status(500).json({
+
+            answer:
+                "Something went wrong while connecting to the AI. Please try again."
+
+        });
 
     }
 
-
-    isGenerating = false;
-
-    updateSendButton();
-
-}
+});
 
 
 /* =========================================
-   ADD MESSAGE
+   START SERVER
    ========================================= */
 
-function addMessage(
-    type,
-    text
-) {
-
-    const messagesBox =
-        document.getElementById("messages");
+const PORT =
+    process.env.PORT || 3000;
 
 
-    const container =
-        document.createElement("div");
+app.listen(
+    PORT,
+    "0.0.0.0",
+    () => {
 
-    container.className =
-        "message-container";
-
-
-    const message =
-        document.createElement("div");
-
-
-    message.className =
-        type === "user"
-            ? "user-message"
-            : "bot-message";
-
-
-    message.textContent =
-        text;
-
-
-    container.appendChild(
-        message
-    );
-
-
-    /* COPY BUTTON */
-
-    if (type === "bot") {
-
-        const copyButton =
-            document.createElement("button");
-
-
-        copyButton.className =
-            "copy-button";
-
-
-        copyButton.textContent =
-            "📋 Copy";
-
-
-        copyButton.onclick =
-            () => copyText(
-                text,
-                copyButton
-            );
-
-
-        container.appendChild(
-            copyButton
+        console.log(
+            `32J3_ChatBot server running on port ${PORT}`
         );
 
     }
-
-
-    messagesBox.appendChild(
-        container
-    );
-
-
-    messagesBox.scrollTop =
-        messagesBox.scrollHeight;
-
-}
-
-
-/* =========================================
-   TYPING ANIMATION
-   ========================================= */
-
-function createTypingMessage() {
-
-    const container =
-        document.createElement("div");
-
-
-    container.className =
-        "message-container";
-
-
-    const message =
-        document.createElement("div");
-
-
-    message.className =
-        "bot-message";
-
-
-    const typing =
-        document.createElement("div");
-
-
-    typing.className =
-        "typing";
-
-
-    typing.innerHTML = `
-        <span></span>
-        <span></span>
-        <span></span>
-    `;
-
-
-    message.appendChild(
-        typing
-    );
-
-
-    container.appendChild(
-        message
-    );
-
-
-    return container;
-
-}
-
-
-/* =========================================
-   COPY
-   ========================================= */
-
-async function copyText(
-    text,
-    button
-) {
-
-    try {
-
-        await navigator.clipboard.writeText(
-            text
-        );
-
-
-        button.textContent =
-            "✅ Copied!";
-
-
-        setTimeout(() => {
-
-            button.textContent =
-                "📋 Copy";
-
-        }, 1500);
-
-
-    } catch {
-
-        button.textContent =
-            "❌ Failed";
-
-    }
-
-}
-
-
-/* =========================================
-   ENTER
-   ========================================= */
-
-function handleKey(event) {
-
-    if (
-        event.key === "Enter" &&
-        !event.shiftKey
-    ) {
-
-        event.preventDefault();
-
-        sendMessage();
-
-    }
-
-}
-
-
-/* =========================================
-   AUTO RESIZE
-   ========================================= */
-
-function autoResize(textarea) {
-
-    textarea.style.height =
-        "auto";
-
-
-    textarea.style.height =
-        Math.min(
-            textarea.scrollHeight,
-            150
-        ) + "px";
-
-}
-
-
-/* =========================================
-   SEND BUTTON
-   ========================================= */
-
-function updateSendButton() {
-
-    const button =
-        document.getElementById(
-            "sendButton"
-        );
-
-
-    if (!button) {
-
-        return;
-
-    }
-
-
-    if (isGenerating) {
-
-        button.textContent =
-            "■";
-
-        button.disabled =
-            true;
-
-    } else {
-
-        button.textContent =
-            "➤";
-
-        button.disabled =
-            false;
-
-    }
-
-}
-
-
-/* =========================================
-   SUGGESTIONS
-   ========================================= */
-
-function useSuggestion(text) {
-
-    const input =
-        document.getElementById(
-            "userInput"
-        );
-
-
-    input.value =
-        text;
-
-
-    autoResize(input);
-
-    sendMessage();
-
-}
-
-
-/* =========================================
-   CHAT HISTORY
-   ========================================= */
-
-function saveCurrentChat() {
-
-    if (
-        !conversation.length
-    ) {
-
-        return;
-
-    }
-
-
-    const firstUserMessage =
-        conversation.find(
-            message =>
-                message.role === "user"
-        );
-
-
-    const title =
-        firstUserMessage
-            ? firstUserMessage.content.substring(
-                0,
-                35
-            )
-            : "New Chat";
-
-
-    const existingIndex =
-        chats.findIndex(
-            chat =>
-                chat.id === currentChatId
-        );
-
-
-    const chatData = {
-
-        id:
-            currentChatId,
-
-        title:
-            title,
-
-        messages:
-            conversation,
-
-        updated:
-            new Date().toISOString()
-
-    };
-
-
-    if (
-        existingIndex !== -1
-    ) {
-
-        chats[existingIndex] =
-            chatData;
-
-    } else {
-
-        chats.unshift(
-            chatData
-        );
-
-    }
-
-
-    chats =
-        chats.slice(0, 30);
-
-
-    localStorage.setItem(
-        "32J3Chats",
-        JSON.stringify(chats)
-    );
-
-}
-
-
-/* =========================================
-   HISTORY
-   ========================================= */
-
-function renderChatHistory() {
-
-    const history =
-        document.getElementById(
-            "chatHistory"
-        );
-
-
-    if (!history) {
-
-        return;
-
-    }
-
-
-    history.innerHTML = "";
-
-
-    chats.forEach(chat => {
-
-        const item =
-            document.createElement(
-                "div"
-            );
-
-
-        item.className =
-            "history-item";
-
-
-        item.textContent =
-            "💬 " + chat.title;
-
-
-        item.onclick =
-            () => loadChat(
-                chat.id
-            );
-
-
-        history.appendChild(
-            item
-        );
-
-    });
-
-}
-
-
-/* =========================================
-   LOAD CHAT
-   ========================================= */
-
-function loadChat(id) {
-
-    const chat =
-        chats.find(
-            item =>
-                item.id === id
-        );
-
-
-    if (!chat) {
-
-        return;
-
-    }
-
-
-    currentChatId =
-        chat.id;
-
-
-    conversation =
-        [...chat.messages];
-
-
-    const welcome =
-        document.getElementById(
-            "welcomeScreen"
-        );
-
-
-    if (welcome) {
-
-        welcome.style.display =
-            "none";
-
-    }
-
-
-    const messages =
-        document.getElementById(
-            "messages"
-        );
-
-
-    messages.innerHTML = "";
-
-
-    conversation.forEach(
-        message => {
-
-            addMessage(
-
-                message.role === "user"
-                    ? "user"
-                    : "bot",
-
-                message.content
-
-            );
-
-        }
-    );
-
-
-    closeSidebarMobile();
-
-}
-
-
-/* =========================================
-   CLEAR HISTORY
-   ========================================= */
-
-function clearAllChats() {
-
-    const confirmed =
-        confirm(
-            "Delete all 32J3_ChatBot chat history?"
-        );
-
-
-    if (!confirmed) {
-
-        return;
-
-    }
-
-
-    chats = [];
-
-
-    localStorage.removeItem(
-        "32J3Chats"
-    );
-
-
-    createNewChat(false);
-
-    renderChatHistory();
-
-}
-
-
-/* =========================================
-   SEARCH
-   ========================================= */
-
-const searchInput =
-    document.getElementById(
-        "searchChats"
-    );
-
-
-if (searchInput) {
-
-    searchInput.addEventListener(
-        "input",
-        function () {
-
-            const search =
-                this.value
-                    .toLowerCase()
-                    .trim();
-
-
-            const items =
-                document.querySelectorAll(
-                    ".history-item"
-                );
-
-
-            items.forEach(item => {
-
-                const text =
-                    item.textContent
-                        .toLowerCase();
-
-
-                item.style.display =
-                    text.includes(search)
-                        ? "block"
-                        : "none";
-
-            });
-
-        }
-    );
-
-}
-
-
-/* =========================================
-   DARK MODE
-   ========================================= */
-
-function toggleTheme() {
-
-    document.body.classList.toggle(
-        "dark"
-    );
-
-
-    const isDark =
-        document.body.classList.contains(
-            "dark"
-        );
-
-
-    localStorage.setItem(
-        "32J3Theme",
-        isDark
-            ? "dark"
-            : "light"
-    );
-
-
-    updateThemeIcons();
-
-}
-
-
-/* =========================================
-   LOAD THEME
-   ========================================= */
-
-function loadTheme() {
-
-    const theme =
-        localStorage.getItem(
-            "32J3Theme"
-        );
-
-
-    if (theme === "dark") {
-
-        document.body.classList.add(
-            "dark"
-        );
-
-    }
-
-
-    updateThemeIcons();
-
-}
-
-
-/* =========================================
-   THEME ICONS
-   ========================================= */
-
-function updateThemeIcons() {
-
-    const isDark =
-        document.body.classList.contains(
-            "dark"
-        );
-
-
-    const icon =
-        document.getElementById(
-            "themeIcon"
-        );
-
-
-    const topButton =
-        document.getElementById(
-            "topThemeButton"
-        );
-
-
-    if (icon) {
-
-        icon.textContent =
-            isDark
-                ? "☀️"
-                : "🌙";
-
-    }
-
-
-    if (topButton) {
-
-        topButton.textContent =
-            isDark
-                ? "☀️"
-                : "🌙";
-
-    }
-
-}
-
-
-/* =========================================
-   SIDEBAR
-   ========================================= */
-
-function toggleSidebar() {
-
-    const sidebar =
-        document.getElementById(
-            "sidebar"
-        );
-
-
-    const overlay =
-        document.getElementById(
-            "overlay"
-        );
-
-
-    sidebar.classList.toggle(
-        "open"
-    );
-
-
-    overlay.classList.toggle(
-        "active"
-    );
-
-}
-
-
-function closeSidebarMobile() {
-
-    const sidebar =
-        document.getElementById(
-            "sidebar"
-        );
-
-
-    const overlay =
-        document.getElementById(
-            "overlay"
-        );
-
-
-    if (!sidebar) {
-
-        return;
-
-    }
-
-
-    sidebar.classList.remove(
-        "open"
-    );
-
-
-    overlay.classList.remove(
-        "active"
-    );
-
-}
-
-
-/* =========================================
-   VOICE INPUT
-   ========================================= */
-
-function startVoiceInput() {
-
-    const SpeechRecognition =
-        window.SpeechRecognition ||
-        window.webkitSpeechRecognition;
-
-
-    if (!SpeechRecognition) {
-
-        alert(
-            "Voice input is not supported in this browser."
-        );
-
-        return;
-
-    }
-
-
-    const recognition =
-        new SpeechRecognition();
-
-
-    recognition.lang =
-        "en-IN";
-
-
-    recognition.interimResults =
-        false;
-
-
-    recognition.maxAlternatives =
-        1;
-
-
-    const voiceButton =
-        document.getElementById(
-            "voiceButton"
-        );
-
-
-    voiceButton.textContent =
-        "🔴";
-
-
-    recognition.start();
-
-
-    recognition.onresult =
-        function (event) {
-
-            const text =
-                event.results[0][0]
-                    .transcript;
-
-
-            const input =
-                document.getElementById(
-                    "userInput"
-                );
-
-
-            input.value =
-                text;
-
-
-            autoResize(input);
-
-        };
-
-
-    recognition.onerror =
-        function () {
-
-            voiceButton.textContent =
-                "🎤";
-
-        };
-
-
-    recognition.onend =
-        function () {
-
-            voiceButton.textContent =
-                "🎤";
-
-        };
-
-}
+);
