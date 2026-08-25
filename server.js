@@ -8,19 +8,26 @@ app.use(express.json());
 app.use(express.static("public"));
 
 
+/* =========================================
+   CHAT
+   ========================================= */
+
 app.post("/chat", async (req, res) => {
 
     try {
 
-        let messages = req.body.messages;
+        console.log("CHAT REQUEST RECEIVED");
 
 
-        /* Check messages */
+        /* Get messages */
+
+        let messages = req.body?.messages;
+
 
         if (!Array.isArray(messages)) {
 
             return res.status(400).json({
-                answer: "Invalid message format."
+                answer: "Please enter a message."
             });
 
         }
@@ -28,12 +35,12 @@ app.post("/chat", async (req, res) => {
 
         /* Remove empty messages */
 
-        messages = messages.filter(message => {
+        messages = messages.filter((message) => {
 
             return (
                 message &&
                 typeof message.content === "string" &&
-                message.content.trim().length > 0 &&
+                message.content.trim() !== "" &&
                 (
                     message.role === "user" ||
                     message.role === "assistant"
@@ -42,8 +49,6 @@ app.post("/chat", async (req, res) => {
 
         });
 
-
-        /* Make sure at least one message exists */
 
         if (messages.length === 0) {
 
@@ -54,65 +59,60 @@ app.post("/chat", async (req, res) => {
         }
 
 
-        /* Keep conversation manageable */
+        /* Keep recent conversation */
 
         messages = messages.slice(-20);
 
 
-        /* Student Assistant instructions */
+        /* =========================================
+           SYSTEM MESSAGE
+           ========================================= */
 
         const systemMessage = {
 
             role: "system",
 
             content: `
-You are 32J3_ChatBot, an AI Student Assistant.
+You are 32J3_ChatBot, a helpful AI Student Assistant.
 
-Your job is to help students with:
+Answer the user's questions clearly and accurately.
 
+You can help with:
+- Academics
 - Programming
-- Python
-- Java
+- Computer science
 - Web development
-- Machine learning
+- Mathematics
 - Artificial intelligence
+- Machine learning
 - Software engineering
 - Operating systems
-- Computer science
-- Mathematics
-- Quantum computing
-- Exam preparation
-- Projects and assignments
+- Projects
+- Assignments
+- General questions
 
-Explain concepts clearly and simply.
+Use simple explanations when possible.
 
-When appropriate:
-- Give examples
-- Give step-by-step explanations
-- Give exam-friendly answers
-- Use simple language
-- Provide code examples when requested
+For programming questions, provide useful examples.
 
-Remember the previous messages in the conversation and use them to understand follow-up questions.
+Remember the previous messages in the conversation when answering follow-up questions.
 
-If you are unsure about something, say so instead of making up information.
+Do not invent information when you are unsure.
 `
 
         };
 
 
-        /* Send to OpenRouter */
+        /* =========================================
+           OPENROUTER
+           ========================================= */
 
-        const response = await fetch(
-
+        const apiResponse = await fetch(
             "https://openrouter.ai/api/v1/chat/completions",
-
             {
-
                 method: "POST",
 
                 headers: {
-
                     "Authorization":
                         `Bearer ${process.env.OPENROUTER_API_KEY}`,
 
@@ -124,81 +124,148 @@ If you are unsure about something, say so instead of making up information.
 
                     "X-Title":
                         "32J3_ChatBot"
-
                 },
-
 
                 body: JSON.stringify({
 
-                    model:
-                        "openrouter/free",
+                    model: "openrouter/free",
 
                     messages: [
-
                         systemMessage,
-
                         ...messages
-
                     ]
 
                 })
-
             }
-
         );
-
-
-        const data =
-            await response.json();
 
 
         console.log(
-            "OpenRouter response:",
-            data
+            "OpenRouter status:",
+            apiResponse.status
         );
 
 
-        /* Handle OpenRouter error */
+        /* =========================================
+           READ AS TEXT
+           ========================================= */
 
-        if (!response.ok) {
+        const text = await apiResponse.text();
+
+
+        console.log(
+            "OpenRouter response length:",
+            text.length
+        );
+
+
+        /* Empty response */
+
+        if (!text || text.trim() === "") {
+
+            console.error(
+                "OpenRouter returned an empty response."
+            );
+
+            return res.status(502).json({
+
+                answer:
+                    "The AI service returned an empty response. Please try again."
+
+            });
+
+        }
+
+
+        /* =========================================
+           PARSE SAFELY
+           ========================================= */
+
+        let data;
+
+        try {
+
+            data = JSON.parse(text);
+
+        } catch (parseError) {
+
+            console.error(
+                "Could not parse OpenRouter response:",
+                parseError.message
+            );
+
+            console.error(
+                "Raw response:",
+                text.substring(0, 500)
+            );
+
+            return res.status(502).json({
+
+                answer:
+                    "The AI service returned an invalid response. Please try again."
+
+            });
+
+        }
+
+
+        /* =========================================
+           API ERROR
+           ========================================= */
+
+        if (!apiResponse.ok) {
+
+            console.error(
+                "OpenRouter API error:",
+                data
+            );
 
             return res.status(
-                response.status
+                apiResponse.status
             ).json({
 
                 answer:
-                    data.error?.message ||
-                    "AI service error."
+                    data?.error?.message ||
+                    "The AI service returned an error."
 
             });
 
         }
 
 
-        /* Get answer */
+        /* =========================================
+           GET ANSWER
+           ========================================= */
 
         const answer =
-            data.choices?.[0]?.message?.content;
+            data?.choices?.[0]?.message?.content;
 
 
         if (
-            !answer ||
-            answer.trim().length === 0
+            typeof answer !== "string" ||
+            answer.trim() === ""
         ) {
 
-            return res.status(500).json({
+            console.error(
+                "No AI answer found:",
+                data
+            );
+
+            return res.status(502).json({
 
                 answer:
-                    "The AI returned an empty answer. Please try again."
+                    "The AI did not return an answer. Please try again."
 
             });
 
         }
 
 
-        /* Send answer to website */
+        /* =========================================
+           SEND TO FRONTEND
+           ========================================= */
 
-        res.json({
+        return res.json({
 
             answer:
                 answer.trim()
@@ -209,15 +276,14 @@ If you are unsure about something, say so instead of making up information.
     } catch (error) {
 
         console.error(
-            "Server error:",
+            "CHAT ERROR:",
             error
         );
 
-
-        res.status(500).json({
+        return res.status(500).json({
 
             answer:
-                "Something went wrong. Please try again."
+                "Something went wrong while connecting to the AI."
 
         });
 
@@ -227,7 +293,7 @@ If you are unsure about something, say so instead of making up information.
 
 
 /* =========================================
-   START SERVER
+   SERVER
    ========================================= */
 
 const PORT =
@@ -240,7 +306,7 @@ app.listen(
     () => {
 
         console.log(
-            `32J3_ChatBot server running on port ${PORT}`
+            `32J3_ChatBot running on port ${PORT}`
         );
 
     }
