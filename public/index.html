@@ -2,46 +2,403 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>32J3_ChaBot</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="style.css">
+    <meta name="description"
+          content="32J3_ChatBot">
+
+    <title>vasu_ChatBot</title>
+
+    <link rel="stylesheet"
+          href="style.css">
+
 </head>
 
 <body>
 
-    <div class="chat-container">
+    <div class="app">
 
-        <div class="chat-header">
-            🤖 AI Student Assistant
-        </div>
+        <!-- ================= SIDEBAR ================= -->
 
-        <div id="messages">
+        <aside class="sidebar" id="sidebar">
 
-            <div class="bot-message">
-                Hello! 👋 Ask me anything.
+            <div class="sidebar-header">
+
+                <div class="brand">
+
+                    <div class="brand-icon">
+                        ✨
+                    </div>
+
+                    <div>
+                        <h2>vasu_ChatBot</h2>
+                        <span>AI Student Assistant</span>
+                    </div>
+
+                </div>
+
+                <button
+                    class="close-sidebar"
+                    onclick="toggleSidebar()"
+                    title="Close sidebar">
+                    ×
+                </button>
+
             </div>
 
-        </div>
 
-        <div class="input-area">
+            <!-- New Chat -->
 
-            <input
-                id="userInput"
-                type="text"
-                placeholder="Ask anything..."
-                onkeydown="handleKey(event)"
-            >
+            <button
+                class="new-chat"
+                onclick="newChat()">
 
-           <button onclick="sendMessage()">
-    ➤
-</button>
+                <span>＋</span>
 
-        </div>
+                <span>New Chat</span>
+
+            </button>
+
+
+            <!-- Search -->
+
+            <div class="search-box">
+
+                <span>🔍</span>
+
+                <input
+                    type="text"
+                    id="searchChats"
+                    placeholder="Search chats...">
+
+            </div>
+
+
+            <!-- Chat History -->
+
+            <div class="chat-history">
+
+                <div class="history-title">
+                    TODAY
+                </div>
+
+                <div id="chatHistory">
+
+                    <!-- Chat history will appear here -->
+
+                </div>
+
+            </div>
+
+
+            <!-- Sidebar Bottom -->
+
+            <div class="sidebar-bottom">
+
+                <button
+                    class="sidebar-button"
+                    onclick="toggleTheme()">
+
+                    <span id="themeIcon">
+                        🌙
+                    </span>
+
+                    <span>
+                        Dark Mode
+                    </span>
+
+                </button>
+
+                <button
+                    class="sidebar-button"
+                    onclick="clearAllChats()">
+
+                    🗑️
+
+                    <span>
+                        Clear History
+                    </span>
+
+                </button>
+
+            </div>
+
+        </aside>
+
+
+        <!-- ================= MAIN AREA ================= -->
+
+        <main class="main">
+
+
+            <!-- TOP BAR -->
+
+            <header class="topbar">
+
+                <button
+                    class="menu-button"
+                    onclick="toggleSidebar()"
+                    title="Menu">
+
+                    ☰
+
+                </button>
+
+
+                <div class="topbar-title">
+
+                    <div class="status-dot"></div>
+
+                    <div>
+
+                        <strong>
+                            vasu_ChatBot
+                        </strong>
+
+                        <small>
+                            AI Student Assistant
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="topbar-actions">
+
+                    <button
+                        onclick="newChat()"
+                        title="New Chat">
+
+                        ＋
+
+                    </button>
+
+                    <button
+                        onclick="toggleTheme()"
+                        id="topThemeButton"
+                        title="Change theme">
+
+                        🌙
+
+                    </button>
+
+                </div>
+
+            </header>
+
+
+            <!-- ================= CHAT ================= -->
+
+            <section
+                class="chat-area"
+                id="chatArea">
+
+
+                <!-- Welcome Screen -->
+
+                <div
+                    class="welcome"
+                    id="welcomeScreen">
+
+                    <div class="welcome-logo">
+                        ✨
+                    </div>
+
+                    <h1>
+                        How can I help you today?
+                    </h1>
+
+                    <p>
+                        Ask vasu_ChatBot anything about
+                        programming, academics, exams,
+                        projects and more.
+                    </p>
+
+
+                    <!-- Suggested Questions -->
+
+                    <div class="suggestions">
+
+
+                        <button
+                            onclick="useSuggestion('Explain Python in simple words')">
+
+                            <span>🐍</span>
+
+                            <div>
+
+                                <strong>
+                                    Learn Python
+                                </strong>
+
+                                <small>
+                                    Explain Python in simple words
+                                </small>
+
+                            </div>
+
+                        </button>
+
+
+                        <button
+                            onclick="useSuggestion('Explain machine learning with a simple example')">
+
+                            <span>🧠</span>
+
+                            <div>
+
+                                <strong>
+                                    Machine Learning
+                                </strong>
+
+                                <small>
+                                    Explain ML with an example
+                                </small>
+
+                            </div>
+
+                        </button>
+
+
+                        <button
+                            onclick="useSuggestion('Give me important exam questions for Software Engineering')">
+
+                            <span>📚</span>
+
+                            <div>
+
+                                <strong>
+                                    Exam Preparation
+                                </strong>
+
+                                <small>
+                                    Get important exam questions
+                                </small>
+
+                            </div>
+
+                        </button>
+
+
+                        <button
+                            onclick="useSuggestion('Help me create a web development project')">
+
+                            <span>💻</span>
+
+                            <div>
+
+                                <strong>
+                                    Project Help
+                                </strong>
+
+                                <small>
+                                    Get help with your project
+                                </small>
+
+                            </div>
+
+                        </button>
+
+
+                    </div>
+
+                </div>
+
+
+                <!-- Messages -->
+
+                <div
+                    id="messages"
+                    class="messages">
+
+                </div>
+
+
+            </section>
+
+
+            <!-- ================= INPUT ================= -->
+
+            <div class="input-section">
+
+                <div class="input-wrapper">
+
+
+                    <!-- Voice -->
+
+                    <button
+                        class="input-action"
+                        id="voiceButton"
+                        onclick="startVoiceInput()"
+                        title="Voice input">
+
+                        🎤
+
+                    </button>
+
+
+                    <!-- Text -->
+
+                    <textarea
+                        id="userInput"
+                        rows="1"
+                        placeholder="Message vasu_ChatBot..."
+                        onkeydown="handleKey(event)"
+                        oninput="autoResize(this)">
+                    </textarea>
+
+
+                    <!-- Send -->
+
+                    <button
+                        class="send-button"
+                        id="sendButton"
+                        onclick="sendMessage()"
+                        title="Send message">
+
+                        ➤
+
+                    </button>
+
+                </div>
+
+
+                <div class="input-info">
+
+                    <span>
+                        vasu_ChatBot can make mistakes.
+                        Check important information.
+                    </span>
+
+                    <span>
+                        Press Enter to send
+                    </span>
+
+                </div>
+
+            </div>
+
+
+        </main>
 
     </div>
+
+
+    <!-- ================= MOBILE OVERLAY ================= -->
+
+    <div
+        class="overlay"
+        id="overlay"
+        onclick="toggleSidebar()">
+    </div>
+
+
+    <!-- JavaScript -->
 
     <script src="script.js"></script>
 
